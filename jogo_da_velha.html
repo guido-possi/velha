@@ -1,0 +1,2187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Velha Neon</title>
+    <style>
+        /* ========================================
+           RESET E CONFIGURAÇÕES GLOBAIS
+        ======================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --neon-blue: #00f3ff;
+            --neon-purple: #b537f2;
+            --neon-pink: #ff006e;
+            --neon-green: #00ff88;
+            --neon-yellow: #ffee00;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --error: #ff3366;
+            --success: #00ff88;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Efeito de fundo animado */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(181, 55, 242, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(0, 243, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ========================================
+           CONTAINER PRINCIPAL
+        ======================================== */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ========================================
+           TIPOGRAFIA E ELEMENTOS BASE
+        ======================================== */
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: glow-text 3s ease-in-out infinite;
+            text-shadow: 0 0 20px rgba(181, 55, 242, 0.5);
+        }
+
+        @keyframes glow-text {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--neon-purple);
+            text-shadow: 0 0 8px var(--neon-purple);
+        }
+
+        /* ========================================
+           BOTÕES
+        ======================================== */
+        .btn {
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+            border: 2px solid var(--neon-blue);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            min-height: 48px; /* Touch-friendly */
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(0, 243, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.6), 0 0 40px rgba(0, 243, 255, 0.3);
+            border-color: var(--neon-pink);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 10px rgba(181, 55, 242, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(181, 55, 242, 0.6), 0 0 40px rgba(181, 55, 242, 0.3);
+        }
+
+        .btn-danger {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 10px rgba(255, 0, 110, 0.3);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.6), 0 0 40px rgba(255, 0, 110, 0.3);
+        }
+
+        .btn-success {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 255, 136, 0.3);
+        }
+
+        /* ========================================
+           TELAS
+        ======================================== */
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ========================================
+           TELA INICIAL
+        ======================================== */
+        .mode-selection {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .mode-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2rem;
+        }
+
+        .player-names {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 2rem 0;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            color: var(--neon-blue);
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            background: rgba(26, 26, 46, 0.8);
+            border: 2px solid var(--neon-blue);
+            color: var(--text-primary);
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            min-height: 48px; /* Touch-friendly */
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 15px rgba(181, 55, 242, 0.5);
+        }
+
+        .difficulty-selection {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 1rem 0;
+        }
+
+        .difficulty-btn {
+            padding: 15px;
+            font-size: 0.95rem;
+        }
+
+        .difficulty-btn.selected {
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
+            border-color: var(--neon-yellow);
+            box-shadow: 0 0 20px rgba(255, 238, 0, 0.5);
+        }
+
+        /* ========================================
+           TABULEIRO DO JOGO
+        ======================================== */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .score-display {
+            display: flex;
+            gap: 20px;
+            font-size: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 8px;
+            border: 1px solid var(--neon-blue);
+        }
+
+        .score-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .game-info {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .current-player {
+            font-size: 1.3rem;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .game-timer {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .board-container {
+            margin: 2rem 0;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 0 auto;
+            max-width: 400px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: rgba(26, 26, 46, 0.8);
+            border: 3px solid var(--neon-blue);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            min-height: 80px; /* Touch-friendly */
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(0, 243, 255, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .cell:hover::before {
+            opacity: 1;
+        }
+
+        .cell:hover {
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 20px rgba(181, 55, 242, 0.4);
+            transform: scale(1.05);
+        }
+
+        .cell.x {
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px var(--neon-blue);
+            animation: markCell 0.5s ease;
+        }
+
+        .cell.o {
+            color: var(--neon-pink);
+            text-shadow: 0 0 20px var(--neon-pink);
+            animation: markCell 0.5s ease;
+        }
+
+        .cell.winning {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(0, 243, 255, 0.3));
+            animation: winningCell 1s ease infinite;
+        }
+
+        @keyframes markCell {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(180deg);
+            }
+            100% {
+                transform: scale(1) rotate(360deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes winningCell {
+            0%, 100% {
+                box-shadow: 0 0 20px var(--neon-green), 0 0 40px var(--neon-green);
+                border-color: var(--neon-green);
+            }
+            50% {
+                box-shadow: 0 0 40px var(--neon-green), 0 0 80px var(--neon-green);
+                border-color: var(--neon-yellow);
+            }
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .special-rule-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 1.5rem 0;
+            padding: 15px;
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 8px;
+            border: 2px solid var(--neon-purple);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid var(--neon-blue);
+        }
+
+        .toggle-switch.active {
+            background: var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            left: 32px;
+        }
+
+        .toggle-label {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        /* ========================================
+           MENSAGENS E MODAIS
+        ======================================== */
+        .message {
+            text-align: center;
+            padding: 15px;
+            margin: 1rem 0;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .message.sarcastic {
+            background: rgba(181, 55, 242, 0.2);
+            border: 2px solid var(--neon-purple);
+            color: var(--neon-purple);
+            text-shadow: 0 0 10px var(--neon-purple);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            padding: 30px;
+            border-radius: 12px;
+            border: 2px solid var(--neon-blue);
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.4);
+            animation: scaleIn 0.3s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: var(--neon-pink);
+            text-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        .modal-body {
+            margin: 1.5rem 0;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        /* ========================================
+           REGISTROS E ESTATÍSTICAS
+        ======================================== */
+        .records-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 2rem 0;
+        }
+
+        .record-item {
+            background: rgba(26, 26, 46, 0.6);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid var(--neon-blue);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .record-item:hover {
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 20px rgba(181, 55, 242, 0.3);
+            transform: translateX(5px);
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .record-names {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        .record-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+
+        .delete-record-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 36px;
+        }
+
+        .delete-record-btn:hover {
+            background: var(--neon-pink);
+            color: var(--bg-primary);
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        /* ========================================
+           CONFIGURAÇÕES
+        ======================================== */
+        .settings-section {
+            margin: 2rem 0;
+            padding: 20px;
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 12px;
+            border: 2px solid var(--neon-blue);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            width: 120px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .language-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            min-height: 40px;
+        }
+
+        .lang-btn.active {
+            background: var(--neon-purple);
+            box-shadow: 0 0 15px var(--neon-purple);
+        }
+
+        /* ========================================
+           RESPONSIVIDADE
+        ======================================== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2rem;
+                letter-spacing: 2px;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            .board {
+                gap: 8px;
+                max-width: 100%;
+            }
+
+            .cell {
+                font-size: 2.5rem;
+                min-height: 70px;
+            }
+
+            .difficulty-selection {
+                grid-template-columns: 1fr;
+            }
+
+            .game-header {
+                flex-direction: column;
+            }
+
+            .score-display {
+                justify-content: center;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .record-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .cell {
+                font-size: 2rem;
+                min-height: 60px;
+            }
+
+            .btn {
+                font-size: 0.9rem;
+                padding: 10px 16px;
+            }
+        }
+
+        /* ========================================
+           ANIMAÇÕES ESPECIAIS
+        ======================================== */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .shake {
+            animation: shake 0.5s ease;
+        }
+
+        /* ========================================
+           UTILITÁRIOS
+        ======================================== */
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-2 {
+            margin-top: 2rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 2rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .no-records {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <!-- ========================================
+         TELA INICIAL
+    ======================================== -->
+    <div class="container">
+        <div id="homeScreen" class="screen active">
+            <h1>Jogo da Velha Neon</h1>
+            
+            <div class="mode-selection">
+                <button class="btn mode-btn" onclick="selectMode(1)" data-i18n="mode1Player">
+                    🤖 1 Jogador (vs IA)
+                </button>
+                <button class="btn mode-btn" onclick="selectMode(2)" data-i18n="mode2Players">
+                    👥 2 Jogadores
+                </button>
+            </div>
+
+            <div id="difficultyContainer" class="hidden">
+                <h3 data-i18n="selectDifficulty">Selecione a Dificuldade</h3>
+                <div class="difficulty-selection">
+                    <button class="btn difficulty-btn" onclick="selectDifficulty('easy')" data-i18n="diffEasy">
+                        😊 Fácil
+                    </button>
+                    <button class="btn difficulty-btn" onclick="selectDifficulty('medium')" data-i18n="diffMedium">
+                        🤔 Médio
+                    </button>
+                    <button class="btn difficulty-btn" onclick="selectDifficulty('hard')" data-i18n="diffHard">
+                        😤 Difícil
+                    </button>
+                    <button class="btn difficulty-btn" onclick="selectDifficulty('impossible')" data-i18n="diffImpossible">
+                        💀 Impossível
+                    </button>
+                </div>
+            </div>
+
+            <div class="player-names">
+                <div class="input-group">
+                    <label for="player1Name" data-i18n="player1Name">Jogador 1 (X)</label>
+                    <input type="text" id="player1Name" placeholder="Digite seu nome" data-i18n-placeholder="enterName">
+                </div>
+                <div id="player2NameContainer" class="input-group">
+                    <label for="player2Name" data-i18n="player2Name">Jogador 2 (O)</label>
+                    <input type="text" id="player2Name" placeholder="Digite seu nome" data-i18n-placeholder="enterName">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="startGame()" data-i18n="startGame">
+                🎮 Iniciar Jogo
+            </button>
+
+            <div style="display: flex; gap: 10px; margin-top: 1rem;">
+                <button class="btn" style="flex: 1;" onclick="showRecords()" data-i18n="viewRecords">
+                    📊 Ver Registros
+                </button>
+                <button class="btn" style="flex: 1;" onclick="showSettings()" data-i18n="settings">
+                    ⚙️ Configurações
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================
+             TELA DO JOGO
+        ======================================== -->
+        <div id="gameScreen" class="screen">
+            <div class="game-header">
+                <div class="score-display">
+                    <div class="score-item">
+                        <span class="score-label" data-i18n="wins">Vitórias</span>
+                        <span class="score-value" id="winsDisplay">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label" data-i18n="losses">Derrotas</span>
+                        <span class="score-value" id="lossesDisplay">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label" data-i18n="draws">Empates</span>
+                        <span class="score-value" id="drawsDisplay">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="game-info">
+                <div class="current-player" id="currentPlayerDisplay">
+                    Vez de: Jogador 1
+                </div>
+                <div class="game-timer" id="gameTimer">
+                    ⏱️ Tempo: 0s
+                </div>
+                <div id="winStreakDisplay" style="margin-top: 10px; color: var(--neon-green); font-size: 0.95rem;"></div>
+            </div>
+
+            <div class="special-rule-toggle">
+                <div class="toggle-switch" id="specialRuleToggle" onclick="toggleSpecialRule()"></div>
+                <span class="toggle-label" onclick="toggleSpecialRule()" data-i18n="specialRuleLabel">
+                    Regra Especial de Empate
+                </span>
+            </div>
+
+            <div id="sarcasticMessage" class="message sarcastic hidden"></div>
+
+            <div class="board-container">
+                <div class="board" id="gameBoard"></div>
+            </div>
+
+            <div class="game-controls">
+                <button class="btn btn-success" onclick="resetGame()" data-i18n="newGame">
+                    🔄 Nova Partida
+                </button>
+                <button class="btn btn-danger" onclick="confirmBackToMenu()" data-i18n="backMenu">
+                    🏠 Menu Principal
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================
+             TELA DE REGISTROS
+        ======================================== -->
+        <div id="recordsScreen" class="screen">
+            <h2 data-i18n="gameRecords">Registros de Jogos</h2>
+            
+            <div id="recordsList" class="records-list"></div>
+
+            <button class="btn btn-danger" style="width: 100%; margin-top: 2rem;" onclick="confirmDeleteAllRecords()" data-i18n="deleteAllRecords">
+                🗑️ Zerar Todos os Placares
+            </button>
+
+            <button class="btn" style="width: 100%; margin-top: 1rem;" onclick="backToHome()" data-i18n="backMenu">
+                🏠 Voltar ao Menu
+            </button>
+        </div>
+
+        <!-- ========================================
+             TELA DE CONFIGURAÇÕES
+        ======================================== -->
+        <div id="settingsScreen" class="screen">
+            <h2 data-i18n="settings">Configurações</h2>
+
+            <div class="settings-section">
+                <h3 data-i18n="soundSettings">🔊 Sons</h3>
+                
+                <div class="setting-item">
+                    <span class="setting-label" data-i18n="masterVolume">Volume Geral</span>
+                    <div class="volume-control">
+                        <input type="range" id="volumeSlider" min="0" max="100" value="70" oninput="updateVolume(this.value)">
+                        <span id="volumeValue">70%</span>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <span class="setting-label" data-i18n="soundEffects">Efeitos Sonoros</span>
+                    <div class="toggle-switch active" id="soundToggle" onclick="toggleSound()"></div>
+                </div>
+
+                <div class="setting-item">
+                    <span class="setting-label" data-i18n="backgroundMusic">Música de Fundo</span>
+                    <div class="toggle-switch" id="musicToggle" onclick="toggleMusic()"></div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3 data-i18n="languageSettings">🌐 Idioma</h3>
+                
+                <div class="setting-item">
+                    <span class="setting-label" data-i18n="selectLanguage">Selecionar Idioma</span>
+                    <div class="language-buttons">
+                        <button class="btn lang-btn active" onclick="changeLanguage('pt')">🇧🇷 PT</button>
+                        <button class="btn lang-btn" onclick="changeLanguage('en')">🇺🇸 EN</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3 data-i18n="gameInfo">ℹ️ Sobre o Jogo</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;" data-i18n="aboutText">
+                    Jogo da Velha Neon v1.0 - Um jogo clássico com visual moderno e IA desafiadora. 
+                    Desenvolvido com HTML5, CSS3 e JavaScript puro.
+                </p>
+            </div>
+
+            <button class="btn" style="width: 100%; margin-top: 2rem;" onclick="backToHome()" data-i18n="backMenu">
+                🏠 Voltar ao Menu
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================
+         MODAIS
+    ======================================== -->
+    <!-- Modal de Confirmação -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="confirmModalTitle">Confirmar</div>
+            <div class="modal-body" id="confirmModalMessage"></div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="confirmModalAction()" data-i18n="confirm">Confirmar</button>
+                <button class="btn btn-danger" onclick="closeModal('confirmModal')" data-i18n="cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Senha -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" data-i18n="enterPassword">Digite a Senha</div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;" data-i18n="passwordRequired">
+                    Esta ação requer senha de administrador.
+                </p>
+                <div class="input-group">
+                    <label for="passwordInput" data-i18n="password">Senha</label>
+                    <input type="password" id="passwordInput" placeholder="••••••••" data-i18n-placeholder="passwordPlaceholder">
+                </div>
+                <div id="passwordError" class="hidden" style="color: var(--error); margin-top: 0.5rem; text-align: center;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="submitPassword()" data-i18n="submit">Enviar</button>
+                <button class="btn btn-danger" onclick="closePasswordModal()" data-i18n="cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Informação da Regra Especial -->
+    <div id="specialRuleInfoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" data-i18n="specialRuleTitle">🎲 Regra Especial de Empate</div>
+            <div class="modal-body">
+                <p style="color: var(--text-primary); line-height: 1.8;" data-i18n="specialRuleExplanation">
+                    Quando o jogo terminar em empate, a última jogada feita será automaticamente 
+                    a primeira jogada do adversário na próxima partida! Isso adiciona uma camada 
+                    estratégica ao jogo. Você pode desativar esta regra a qualquer momento usando 
+                    o botão de alternância.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('specialRuleInfoModal')" data-i18n="understood">
+                    Entendi!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         JAVASCRIPT
+    ======================================== -->
+    <script>
+        // ========================================
+        // VARIÁVEIS GLOBAIS
+        // ========================================
+        const CORRECT_PASSWORD = 'guidothebest';
+        let currentLanguage = 'pt';
+        let gameMode = null; // 1 or 2
+        let difficulty = null; // 'easy', 'medium', 'hard', 'impossible'
+        let currentPlayer = 'X';
+        let board = Array(9).fill(null);
+        let gameActive = true;
+        let player1Name = '';
+        let player2Name = '';
+        let gameStats = {
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            winStreak: 0,
+            maxWinStreak: 0
+        };
+        let gameStartTime = null;
+        let timerInterval = null;
+        let audioContext = null;
+        let masterVolume = 0.7;
+        let soundEnabled = true;
+        let musicEnabled = false;
+        let backgroundMusicOscillator = null;
+        let specialRuleEnabled = false;
+        let lastMoveCell = null;
+        let firstMoveSet = null;
+        let passwordCallback = null;
+        let hasShownSpecialRuleInfo = false;
+
+        // Padrões de vitória
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Linhas
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Colunas
+            [0, 4, 8], [2, 4, 6]              // Diagonais
+        ];
+
+        // ========================================
+        // SISTEMA DE i18n
+        // ========================================
+        const translations = {
+            pt: {
+                mode1Player: '🤖 1 Jogador (vs IA)',
+                mode2Players: '👥 2 Jogadores',
+                selectDifficulty: 'Selecione a Dificuldade',
+                diffEasy: '😊 Fácil',
+                diffMedium: '🤔 Médio',
+                diffHard: '😤 Difícil',
+                diffImpossible: '💀 Impossível',
+                player1Name: 'Jogador 1 (X)',
+                player2Name: 'Jogador 2 (O)',
+                enterName: 'Digite seu nome',
+                startGame: '🎮 Iniciar Jogo',
+                viewRecords: '📊 Ver Registros',
+                settings: '⚙️ Configurações',
+                wins: 'Vitórias',
+                losses: 'Derrotas',
+                draws: 'Empates',
+                newGame: '🔄 Nova Partida',
+                backMenu: '🏠 Menu Principal',
+                gameRecords: 'Registros de Jogos',
+                deleteAllRecords: '🗑️ Zerar Todos os Placares',
+                soundSettings: '🔊 Sons',
+                masterVolume: 'Volume Geral',
+                soundEffects: 'Efeitos Sonoros',
+                backgroundMusic: 'Música de Fundo',
+                languageSettings: '🌐 Idioma',
+                selectLanguage: 'Selecionar Idioma',
+                gameInfo: 'ℹ️ Sobre o Jogo',
+                aboutText: 'Jogo da Velha Neon v1.0 - Um jogo clássico com visual moderno e IA desafiadora. Desenvolvido com HTML5, CSS3 e JavaScript puro.',
+                confirm: 'Confirmar',
+                cancel: 'Cancelar',
+                enterPassword: 'Digite a Senha',
+                passwordRequired: 'Esta ação requer senha de administrador.',
+                password: 'Senha',
+                passwordPlaceholder: '••••••••',
+                submit: 'Enviar',
+                specialRuleLabel: 'Regra Especial de Empate',
+                specialRuleTitle: '🎲 Regra Especial de Empate',
+                specialRuleExplanation: 'Quando o jogo terminar em empate, a última jogada feita será automaticamente a primeira jogada do adversário na próxima partida! Isso adiciona uma camada estratégica ao jogo. Você pode desativar esta regra a qualquer momento usando o botão de alternância.',
+                understood: 'Entendi!',
+                currentTurn: 'Vez de:',
+                time: 'Tempo:',
+                winStreak: 'Sequência de vitórias:',
+                winRate: 'Taxa de vitória:',
+                noRecords: 'Nenhum registro encontrado. Jogue algumas partidas!',
+                deleteRecord: '🗑️',
+                vs: 'vs',
+                // Mensagens sarcásticas
+                sarcasticWin1: '🎉 Uau! Parabéns! Você conseguiu vencer um jogo de criança!',
+                sarcasticWin2: '👏 Impressionante! Até um relógio quebrado está certo duas vezes por dia.',
+                sarcasticWin3: '🏆 Vitória! Você deve se sentir orgulhoso... ou não.',
+                sarcasticWin4: '✨ Fantástico! Agora tente vencer sem suar tanto.',
+                sarcasticLoss1: '💀 Perdeu? Que surpresa! Disse ninguém.',
+                sarcasticLoss2: '😢 Não chore, é só um jogo... que você perdeu.',
+                sarcasticLoss3: '🤦 Ah não! Quem poderia prever isso? Ah sim, todos.',
+                sarcasticLoss4: '💔 Melhor sorte na próxima... você vai precisar.',
+                sarcasticDraw1: '😑 Empate. Nem ganhar você consegue direito.',
+                sarcasticDraw2: '🤷 Um empate? Mediocridade no seu melhor.',
+                sarcasticDraw3: '😴 Empate. Que emocionante. Quase caí da cadeira.',
+                sarcasticDraw4: '🎭 Empate! A IA teve pena de você.',
+                confirmBackToMenu: 'Tem certeza que quer voltar ao menu? O jogo em andamento será perdido.',
+                confirmDeleteAll: 'Tem certeza que quer apagar TODOS os registros? Esta ação não pode ser desfeita!',
+                confirmDeleteRecord: 'Tem certeza que quer apagar este registro?',
+                incorrectPassword: '❌ Senha incorreta! Tente novamente.',
+                xWins: 'X venceu!',
+                oWins: 'O venceu!',
+                playerWins: 'venceu!',
+                gameDraw: 'Empate!',
+                specialRuleActive: '🎲 Regra Especial ativada! Próxima partida começará com jogada pré-definida.',
+                selectDifficultyFirst: '⚠️ Por favor, selecione uma dificuldade primeiro!',
+                enterPlayerName: '⚠️ Por favor, digite o nome do jogador!'
+            },
+            en: {
+                mode1Player: '🤖 1 Player (vs AI)',
+                mode2Players: '👥 2 Players',
+                selectDifficulty: 'Select Difficulty',
+                diffEasy: '😊 Easy',
+                diffMedium: '🤔 Medium',
+                diffHard: '😤 Hard',
+                diffImpossible: '💀 Impossible',
+                player1Name: 'Player 1 (X)',
+                player2Name: 'Player 2 (O)',
+                enterName: 'Enter your name',
+                startGame: '🎮 Start Game',
+                viewRecords: '📊 View Records',
+                settings: '⚙️ Settings',
+                wins: 'Wins',
+                losses: 'Losses',
+                draws: 'Draws',
+                newGame: '🔄 New Game',
+                backMenu: '🏠 Main Menu',
+                gameRecords: 'Game Records',
+                deleteAllRecords: '🗑️ Delete All Records',
+                soundSettings: '🔊 Sound',
+                masterVolume: 'Master Volume',
+                soundEffects: 'Sound Effects',
+                backgroundMusic: 'Background Music',
+                languageSettings: '🌐 Language',
+                selectLanguage: 'Select Language',
+                gameInfo: 'ℹ️ About',
+                aboutText: 'Neon Tic Tac Toe v1.0 - A classic game with modern visuals and challenging AI. Built with pure HTML5, CSS3 and JavaScript.',
+                confirm: 'Confirm',
+                cancel: 'Cancel',
+                enterPassword: 'Enter Password',
+                passwordRequired: 'This action requires administrator password.',
+                password: 'Password',
+                passwordPlaceholder: '••••••••',
+                submit: 'Submit',
+                specialRuleLabel: 'Special Draw Rule',
+                specialRuleTitle: '🎲 Special Draw Rule',
+                specialRuleExplanation: 'When the game ends in a draw, the last move made will automatically become the opponent\'s first move in the next game! This adds a strategic layer to the game. You can disable this rule at any time using the toggle button.',
+                understood: 'Got it!',
+                currentTurn: 'Current turn:',
+                time: 'Time:',
+                winStreak: 'Win streak:',
+                winRate: 'Win rate:',
+                noRecords: 'No records found. Play some games!',
+                deleteRecord: '🗑️',
+                vs: 'vs',
+                // Sarcastic messages
+                sarcasticWin1: '🎉 Wow! Congrats! You beat a children\'s game!',
+                sarcasticWin2: '👏 Impressive! Even a broken clock is right twice a day.',
+                sarcasticWin3: '🏆 Victory! You should feel proud... or not.',
+                sarcasticWin4: '✨ Fantastic! Now try winning without breaking a sweat.',
+                sarcasticLoss1: '💀 Lost? What a surprise! Said no one.',
+                sarcasticLoss2: '😢 Don\'t cry, it\'s just a game... that you lost.',
+                sarcasticLoss3: '🤦 Oh no! Who could have predicted this? Oh right, everyone.',
+                sarcasticLoss4: '💔 Better luck next time... you\'ll need it.',
+                sarcasticDraw1: '😑 Draw. Can\'t even win properly.',
+                sarcasticDraw2: '🤷 A draw? Mediocrity at its finest.',
+                sarcasticDraw3: '😴 Draw. How exciting. Almost fell off my chair.',
+                sarcasticDraw4: '🎭 Draw! The AI took pity on you.',
+                confirmBackToMenu: 'Are you sure you want to go back to the menu? The current game will be lost.',
+                confirmDeleteAll: 'Are you sure you want to delete ALL records? This action cannot be undone!',
+                confirmDeleteRecord: 'Are you sure you want to delete this record?',
+                incorrectPassword: '❌ Incorrect password! Try again.',
+                xWins: 'X wins!',
+                oWins: 'O wins!',
+                playerWins: 'wins!',
+                gameDraw: 'Draw!',
+                specialRuleActive: '🎲 Special Rule activated! Next game will start with a pre-set move.',
+                selectDifficultyFirst: '⚠️ Please select a difficulty first!',
+                enterPlayerName: '⚠️ Please enter the player\'s name!'
+            }
+        };
+
+        function translate(key) {
+            return translations[currentLanguage][key] || key;
+        }
+
+        function updateAllTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                element.textContent = translate(key);
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n-placeholder');
+                element.placeholder = translate(key);
+            });
+        }
+
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('gameLanguage', lang);
+            updateAllTranslations();
+
+            // Update language button states
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // ========================================
+        // SISTEMA DE SOM (Web Audio API)
+        // ========================================
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTone(frequency, duration, type = 'sine', volume = 1.0) {
+            if (!soundEnabled) return;
+            
+            initAudioContext();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(masterVolume * volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playClickSound() {
+            playTone(800, 0.1, 'square', 0.3);
+        }
+
+        function playWinSound() {
+            playTone(523.25, 0.2, 'sine', 0.5); // C
+            setTimeout(() => playTone(659.25, 0.2, 'sine', 0.5), 100); // E
+            setTimeout(() => playTone(783.99, 0.3, 'sine', 0.5), 200); // G
+        }
+
+        function playLoseSound() {
+            playTone(400, 0.2, 'sawtooth', 0.4);
+            setTimeout(() => playTone(300, 0.2, 'sawtooth', 0.4), 150);
+            setTimeout(() => playTone(200, 0.3, 'sawtooth', 0.4), 300);
+        }
+
+        function playDrawSound() {
+            playTone(440, 0.15, 'triangle', 0.3);
+            setTimeout(() => playTone(440, 0.15, 'triangle', 0.3), 200);
+        }
+
+        function startBackgroundMusic() {
+            if (!musicEnabled || backgroundMusicOscillator) return;
+            
+            initAudioContext();
+            
+            backgroundMusicOscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            backgroundMusicOscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            backgroundMusicOscillator.type = 'sine';
+            gainNode.gain.value = masterVolume * 0.1;
+            
+            // Simple melody loop
+            const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+            let currentNote = 0;
+            
+            setInterval(() => {
+                if (backgroundMusicOscillator && musicEnabled) {
+                    backgroundMusicOscillator.frequency.setValueAtTime(notes[currentNote], audioContext.currentTime);
+                    currentNote = (currentNote + 1) % notes.length;
+                }
+            }, 500);
+            
+            backgroundMusicOscillator.start();
+        }
+
+        function stopBackgroundMusic() {
+            if (backgroundMusicOscillator) {
+                backgroundMusicOscillator.stop();
+                backgroundMusicOscillator = null;
+            }
+        }
+
+        function updateVolume(value) {
+            masterVolume = value / 100;
+            document.getElementById('volumeValue').textContent = value + '%';
+            localStorage.setItem('gameVolume', value);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const toggle = document.getElementById('soundToggle');
+            toggle.classList.toggle('active');
+            localStorage.setItem('soundEnabled', soundEnabled);
+        }
+
+        function toggleMusic() {
+            musicEnabled = !musicEnabled;
+            const toggle = document.getElementById('musicToggle');
+            toggle.classList.toggle('active');
+            localStorage.setItem('musicEnabled', musicEnabled);
+            
+            if (musicEnabled) {
+                startBackgroundMusic();
+            } else {
+                stopBackgroundMusic();
+            }
+        }
+
+        // ========================================
+        // GERENCIAMENTO DE TELAS
+        // ========================================
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function backToHome() {
+            showScreen('homeScreen');
+        }
+
+        // ========================================
+        // SELEÇÃO DE MODO E DIFICULDADE
+        // ========================================
+        function selectMode(mode) {
+            gameMode = mode;
+            
+            if (mode === 1) {
+                document.getElementById('difficultyContainer').classList.remove('hidden');
+                document.getElementById('player2NameContainer').classList.add('hidden');
+                document.getElementById('player2Name').value = 'IA';
+            } else {
+                document.getElementById('difficultyContainer').classList.add('hidden');
+                document.getElementById('player2NameContainer').classList.remove('hidden');
+                document.getElementById('player2Name').value = '';
+                difficulty = null;
+                
+                // Remove selected state from difficulty buttons
+                document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+            }
+            
+            playClickSound();
+        }
+
+        function selectDifficulty(level) {
+            difficulty = level;
+            
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            playClickSound();
+        }
+
+        // ========================================
+        // INICIAR JOGO
+        // ========================================
+        function startGame() {
+            player1Name = document.getElementById('player1Name').value.trim() || (currentLanguage === 'pt' ? 'Jogador 1' : 'Player 1');
+            
+            if (gameMode === 1) {
+                if (!difficulty) {
+                    alert(translate('selectDifficultyFirst'));
+                    return;
+                }
+                player2Name = 'IA';
+            } else if (gameMode === 2) {
+                player2Name = document.getElementById('player2Name').value.trim() || (currentLanguage === 'pt' ? 'Jogador 2' : 'Player 2');
+            } else {
+                return;
+            }
+            
+            // Load stats for these players
+            loadGameStats();
+            
+            showScreen('gameScreen');
+            initializeBoard();
+            updateScoreDisplay();
+            startTimer();
+            
+            // Update special rule toggle state
+            const toggle = document.getElementById('specialRuleToggle');
+            if (specialRuleEnabled) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+            
+            // Handle first move if special rule is active
+            if (firstMoveSet !== null && specialRuleEnabled) {
+                // Switch player if needed
+                if (currentPlayer === 'O') {
+                    handleCellClick(firstMoveSet);
+                }
+            }
+            
+            playClickSound();
+        }
+
+        // ========================================
+        // TABULEIRO DO JOGO
+        // ========================================
+        function initializeBoard() {
+            board = Array(9).fill(null);
+            currentPlayer = 'X';
+            gameActive = true;
+            lastMoveCell = null;
+            
+            const boardElement = document.getElementById('gameBoard');
+            boardElement.innerHTML = '';
+            
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => handleCellClick(i));
+                boardElement.appendChild(cell);
+            }
+            
+            updateCurrentPlayerDisplay();
+            hideSarcasticMessage();
+            
+            // Handle special rule first move
+            if (firstMoveSet !== null && specialRuleEnabled) {
+                setTimeout(() => {
+                    makeMove(firstMoveSet, currentPlayer);
+                    firstMoveSet = null;
+                }, 500);
+            }
+        }
+
+        function handleCellClick(index) {
+            if (!gameActive || board[index] !== null) return;
+            
+            makeMove(index, currentPlayer);
+            
+            if (gameActive && gameMode === 1 && currentPlayer === 'O') {
+                setTimeout(() => {
+                    makeAIMove();
+                }, Math.random() * 500 + 300); // 300-800ms delay
+            }
+        }
+
+        function makeMove(index, player) {
+            if (board[index] !== null) return;
+            
+            board[index] = player;
+            lastMoveCell = index;
+            
+            const cell = document.querySelector(`[data-index="${index}"]`);
+            cell.textContent = player;
+            cell.classList.add(player.toLowerCase());
+            
+            playClickSound();
+            
+            if (checkWinner()) {
+                endGame('win');
+            } else if (board.every(cell => cell !== null)) {
+                endGame('draw');
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateCurrentPlayerDisplay();
+            }
+        }
+
+        function checkWinner() {
+            for (const pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    highlightWinningCells(pattern);
+                    return board[a];
+                }
+            }
+            return null;
+        }
+
+        function highlightWinningCells(pattern) {
+            pattern.forEach(index => {
+                const cell = document.querySelector(`[data-index="${index}"]`);
+                cell.classList.add('winning');
+            });
+        }
+
+        function updateCurrentPlayerDisplay() {
+            const display = document.getElementById('currentPlayerDisplay');
+            const playerName = currentPlayer === 'X' ? player1Name : player2Name;
+            display.textContent = `${translate('currentTurn')} ${playerName} (${currentPlayer})`;
+        }
+
+        // ========================================
+        // INTELIGÊNCIA ARTIFICIAL
+        // ========================================
+        function makeAIMove() {
+            if (!gameActive) return;
+            
+            let move;
+            
+            switch (difficulty) {
+                case 'easy':
+                    move = getRandomMove();
+                    break;
+                case 'medium':
+                    move = getMediumMove();
+                    break;
+                case 'hard':
+                    move = getHardMove();
+                    break;
+                case 'impossible':
+                    move = getBestMove();
+                    break;
+                default:
+                    move = getRandomMove();
+            }
+            
+            if (move !== -1) {
+                makeMove(move, 'O');
+            }
+        }
+
+        function getRandomMove() {
+            const availableMoves = board.map((cell, index) => cell === null ? index : null).filter(val => val !== null);
+            return availableMoves.length > 0 ? availableMoves[Math.floor(Math.random() * availableMoves.length)] : -1;
+        }
+
+        function getMediumMove() {
+            // 50% chance to block player, 30% chance to try to win, 20% random
+            const rand = Math.random();
+            
+            if (rand < 0.5) {
+                const blockMove = findBlockingMove('X');
+                if (blockMove !== -1) return blockMove;
+            }
+            
+            if (rand < 0.8) {
+                const winMove = findWinningMove('O');
+                if (winMove !== -1) return winMove;
+            }
+            
+            return getRandomMove();
+        }
+
+        function getHardMove() {
+            // Always try to win first, then block, then random
+            const winMove = findWinningMove('O');
+            if (winMove !== -1) return winMove;
+            
+            const blockMove = findBlockingMove('X');
+            if (blockMove !== -1) return blockMove;
+            
+            return getRandomMove();
+        }
+
+        function findWinningMove(player) {
+            for (const pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                const cells = [board[a], board[b], board[c]];
+                
+                if (cells.filter(cell => cell === player).length === 2 &&
+                    cells.filter(cell => cell === null).length === 1) {
+                    if (board[a] === null) return a;
+                    if (board[b] === null) return b;
+                    if (board[c] === null) return c;
+                }
+            }
+            return -1;
+        }
+
+        function findBlockingMove(opponent) {
+            return findWinningMove(opponent);
+        }
+
+        function getBestMove() {
+            let bestScore = -Infinity;
+            let bestMove = -1;
+            
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) {
+                    board[i] = 'O';
+                    const score = minimax(board, 0, false);
+                    board[i] = null;
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = i;
+                    }
+                }
+            }
+            
+            return bestMove;
+        }
+
+        function minimax(board, depth, isMaximizing) {
+            const winner = checkWinner();
+            
+            if (winner === 'O') return 10 - depth;
+            if (winner === 'X') return depth - 10;
+            if (board.every(cell => cell !== null)) return 0;
+            
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === null) {
+                        board[i] = 'O';
+                        const score = minimax(board, depth + 1, false);
+                        board[i] = null;
+                        bestScore = Math.max(score, bestScore);
+                    }
+                }
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === null) {
+                        board[i] = 'X';
+                        const score = minimax(board, depth + 1, true);
+                        board[i] = null;
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+                return bestScore;
+            }
+        }
+
+        // ========================================
+        // FIM DE JOGO
+        // ========================================
+        function endGame(result) {
+            gameActive = false;
+            stopTimer();
+            
+            let sarcasticMessage = '';
+            
+            if (result === 'win') {
+                const winner = currentPlayer;
+                const winnerName = winner === 'X' ? player1Name : player2Name;
+                
+                if (gameMode === 1 && winner === 'X') {
+                    gameStats.wins++;
+                    gameStats.winStreak++;
+                    gameStats.maxWinStreak = Math.max(gameStats.maxWinStreak, gameStats.winStreak);
+                    playWinSound();
+                    sarcasticMessage = getRandomSarcasticMessage('win');
+                } else if (gameMode === 1 && winner === 'O') {
+                    gameStats.losses++;
+                    gameStats.winStreak = 0;
+                    playLoseSound();
+                    sarcasticMessage = getRandomSarcasticMessage('loss');
+                } else if (gameMode === 2) {
+                    if (winner === 'X') {
+                        gameStats.wins++;
+                    } else {
+                        gameStats.losses++;
+                    }
+                    playWinSound();
+                    sarcasticMessage = `🎉 ${winnerName} ${translate('playerWins')}`;
+                }
+                
+                firstMoveSet = null; // Reset special rule on win
+            } else if (result === 'draw') {
+                gameStats.draws++;
+                gameStats.winStreak = 0;
+                playDrawSound();
+                sarcasticMessage = getRandomSarcasticMessage('draw');
+                
+                // Apply special rule
+                if (specialRuleEnabled && lastMoveCell !== null) {
+                    firstMoveSet = lastMoveCell;
+                    
+                    // Show info message first time
+                    if (!hasShownSpecialRuleInfo) {
+                        setTimeout(() => {
+                            showModal('specialRuleInfoModal');
+                            hasShownSpecialRuleInfo = true;
+                            localStorage.setItem('hasShownSpecialRuleInfo', 'true');
+                        }, 2000);
+                    }
+                    
+                    setTimeout(() => {
+                        showSarcasticMessage(translate('specialRuleActive'));
+                    }, 1500);
+                }
+            }
+            
+            showSarcasticMessage(sarcasticMessage);
+            saveGameStats();
+            updateScoreDisplay();
+            saveToRecords();
+        }
+
+        function getRandomSarcasticMessage(type) {
+            const messages = {
+                win: ['sarcasticWin1', 'sarcasticWin2', 'sarcasticWin3', 'sarcasticWin4'],
+                loss: ['sarcasticLoss1', 'sarcasticLoss2', 'sarcasticLoss3', 'sarcasticLoss4'],
+                draw: ['sarcasticDraw1', 'sarcasticDraw2', 'sarcasticDraw3', 'sarcasticDraw4']
+            };
+            
+            const messageKeys = messages[type];
+            const randomKey = messageKeys[Math.floor(Math.random() * messageKeys.length)];
+            return translate(randomKey);
+        }
+
+        function showSarcasticMessage(message) {
+            const messageElement = document.getElementById('sarcasticMessage');
+            messageElement.textContent = message;
+            messageElement.classList.remove('hidden');
+        }
+
+        function hideSarcasticMessage() {
+            const messageElement = document.getElementById('sarcasticMessage');
+            messageElement.classList.add('hidden');
+        }
+
+        function resetGame() {
+            initializeBoard();
+            startTimer();
+            playClickSound();
+        }
+
+        function confirmBackToMenu() {
+            if (gameActive) {
+                showConfirmModal(
+                    translate('confirm'),
+                    translate('confirmBackToMenu'),
+                    () => {
+                        stopTimer();
+                        backToHome();
+                    }
+                );
+            } else {
+                backToHome();
+            }
+        }
+
+        // ========================================
+        // TIMER
+        // ========================================
+        function startTimer() {
+            gameStartTime = Date.now();
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+                document.getElementById('gameTimer').textContent = `⏱️ ${translate('time')} ${elapsed}s`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // ========================================
+        // PLACAR E ESTATÍSTICAS
+        // ========================================
+        function updateScoreDisplay() {
+            document.getElementById('winsDisplay').textContent = gameStats.wins;
+            document.getElementById('lossesDisplay').textContent = gameStats.losses;
+            document.getElementById('drawsDisplay').textContent = gameStats.draws;
+            
+            const totalGames = gameStats.wins + gameStats.losses + gameStats.draws;
+            const winRate = totalGames > 0 ? ((gameStats.wins / totalGames) * 100).toFixed(1) : 0;
+            
+            const streakDisplay = document.getElementById('winStreakDisplay');
+            streakDisplay.textContent = `${translate('winStreak')} ${gameStats.winStreak} | ${translate('winRate')} ${winRate}%`;
+        }
+
+        function saveGameStats() {
+            const key = `gameStats_${player1Name}_${player2Name}`;
+            localStorage.setItem(key, JSON.stringify(gameStats));
+        }
+
+        function loadGameStats() {
+            const key = `gameStats_${player1Name}_${player2Name}`;
+            const saved = localStorage.getItem(key);
+            
+            if (saved) {
+                gameStats = JSON.parse(saved);
+            } else {
+                gameStats = {
+                    wins: 0,
+                    losses: 0,
+                    draws: 0,
+                    winStreak: 0,
+                    maxWinStreak: 0
+                };
+            }
+        }
+
+        // ========================================
+        // REGISTROS
+        // ========================================
+        function saveToRecords() {
+            const records = getRecords();
+            
+            const existingIndex = records.findIndex(r => 
+                r.player1 === player1Name && r.player2 === player2Name
+            );
+            
+            const totalGames = gameStats.wins + gameStats.losses + gameStats.draws;
+            const winRate = totalGames > 0 ? ((gameStats.wins / totalGames) * 100).toFixed(1) : 0;
+            
+            const record = {
+                player1: player1Name,
+                player2: player2Name,
+                wins: gameStats.wins,
+                losses: gameStats.losses,
+                draws: gameStats.draws,
+                winRate: winRate,
+                maxStreak: gameStats.maxWinStreak,
+                lastPlayed: new Date().toISOString()
+            };
+            
+            if (existingIndex !== -1) {
+                records[existingIndex] = record;
+            } else {
+                records.unshift(record);
+                if (records.length > 10) {
+                    records.pop();
+                }
+            }
+            
+            localStorage.setItem('gameRecords', JSON.stringify(records));
+        }
+
+        function getRecords() {
+            const saved = localStorage.getItem('gameRecords');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        function showRecords() {
+            const records = getRecords();
+            const recordsList = document.getElementById('recordsList');
+            
+            if (records.length === 0) {
+                recordsList.innerHTML = `<div class="no-records">${translate('noRecords')}</div>`;
+            } else {
+                recordsList.innerHTML = records.map((record, index) => `
+                    <div class="record-item">
+                        <button class="delete-record-btn" onclick="confirmDeleteRecord(${index})" title="${translate('deleteRecord')}">
+                            ${translate('deleteRecord')}
+                        </button>
+                        <div class="record-header">
+                            <div class="record-names">
+                                ${record.player1} ${translate('vs')} ${record.player2}
+                            </div>
+                        </div>
+                        <div class="record-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">${translate('wins')}</div>
+                                <div class="stat-value">${record.wins}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">${translate('losses')}</div>
+                                <div class="stat-value">${record.losses}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">${translate('draws')}</div>
+                                <div class="stat-value">${record.draws}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">${translate('winRate')}</div>
+                                <div class="stat-value">${record.winRate}%</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">${translate('winStreak')}</div>
+                                <div class="stat-value">${record.maxStreak}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            showScreen('recordsScreen');
+            playClickSound();
+        }
+
+        function confirmDeleteRecord(index) {
+            showConfirmModal(
+                translate('confirm'),
+                translate('confirmDeleteRecord'),
+                () => {
+                    showPasswordModal((password) => {
+                        if (password === CORRECT_PASSWORD) {
+                            deleteRecord(index);
+                            closePasswordModal();
+                        } else {
+                            showPasswordError(translate('incorrectPassword'));
+                        }
+                    });
+                }
+            );
+        }
+
+        function deleteRecord(index) {
+            const records = getRecords();
+            records.splice(index, 1);
+            localStorage.setItem('gameRecords', JSON.stringify(records));
+            showRecords();
+            playClickSound();
+        }
+
+        function confirmDeleteAllRecords() {
+            showConfirmModal(
+                translate('confirm'),
+                translate('confirmDeleteAll'),
+                () => {
+                    showPasswordModal((password) => {
+                        if (password === CORRECT_PASSWORD) {
+                            localStorage.removeItem('gameRecords');
+                            showRecords();
+                            closePasswordModal();
+                        } else {
+                            showPasswordError(translate('incorrectPassword'));
+                        }
+                    });
+                }
+            );
+        }
+
+        // ========================================
+        // CONFIGURAÇÕES
+        // ========================================
+        function showSettings() {
+            showScreen('settingsScreen');
+            playClickSound();
+        }
+
+        function toggleSpecialRule() {
+            specialRuleEnabled = !specialRuleEnabled;
+            const toggle = document.getElementById('specialRuleToggle');
+            toggle.classList.toggle('active');
+            localStorage.setItem('specialRuleEnabled', specialRuleEnabled);
+            playClickSound();
+        }
+
+        // ========================================
+        // MODAIS
+        // ========================================
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showConfirmModal(title, message, callback) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalMessage').textContent = message;
+            window.confirmCallback = callback;
+            showModal('confirmModal');
+        }
+
+        function confirmModalAction() {
+            if (window.confirmCallback) {
+                window.confirmCallback();
+            }
+            closeModal('confirmModal');
+        }
+
+        function showPasswordModal(callback) {
+            passwordCallback = callback;
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordError').classList.add('hidden');
+            showModal('passwordModal');
+        }
+
+        function closePasswordModal() {
+            closeModal('passwordModal');
+            passwordCallback = null;
+        }
+
+        function submitPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (passwordCallback) {
+                passwordCallback(password);
+            }
+        }
+
+        function showPasswordError(message) {
+            const errorElement = document.getElementById('passwordError');
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+            document.querySelector('.modal-content').classList.add('shake');
+            setTimeout(() => {
+                document.querySelector('.modal-content').classList.remove('shake');
+            }, 500);
+        }
+
+        // Pressionar Enter no input de senha
+        document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitPassword();
+            }
+        });
+
+        // ========================================
+        // INICIALIZAÇÃO
+        // ========================================
+        function initialize() {
+            // Load preferences from localStorage
+            const savedLanguage = localStorage.getItem('gameLanguage');
+            if (savedLanguage) {
+                currentLanguage = savedLanguage;
+                document.querySelectorAll('.lang-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if ((savedLanguage === 'pt' && btn.textContent.includes('PT')) ||
+                        (savedLanguage === 'en' && btn.textContent.includes('EN'))) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            const savedVolume = localStorage.getItem('gameVolume');
+            if (savedVolume) {
+                document.getElementById('volumeSlider').value = savedVolume;
+                updateVolume(savedVolume);
+            }
+
+            const savedSoundEnabled = localStorage.getItem('soundEnabled');
+            if (savedSoundEnabled !== null) {
+                soundEnabled = savedSoundEnabled === 'true';
+                const toggle = document.getElementById('soundToggle');
+                if (soundEnabled) {
+                    toggle.classList.add('active');
+                } else {
+                    toggle.classList.remove('active');
+                }
+            }
+
+            const savedMusicEnabled = localStorage.getItem('musicEnabled');
+            if (savedMusicEnabled !== null) {
+                musicEnabled = savedMusicEnabled === 'true';
+                const toggle = document.getElementById('musicToggle');
+                if (musicEnabled) {
+                    toggle.classList.add('active');
+                    startBackgroundMusic();
+                } else {
+                    toggle.classList.remove('active');
+                }
+            }
+
+            const savedSpecialRule = localStorage.getItem('specialRuleEnabled');
+            if (savedSpecialRule !== null) {
+                specialRuleEnabled = savedSpecialRule === 'true';
+            }
+
+            const savedSpecialRuleInfo = localStorage.getItem('hasShownSpecialRuleInfo');
+            if (savedSpecialRuleInfo !== null) {
+                hasShownSpecialRuleInfo = savedSpecialRuleInfo === 'true';
+            }
+
+            updateAllTranslations();
+
+            // Initialize audio context on first user interaction
+            document.body.addEventListener('click', () => {
+                initAudioContext();
+            }, { once: true });
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>
